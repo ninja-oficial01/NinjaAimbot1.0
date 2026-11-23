@@ -45,7 +45,6 @@ local espObjs = {}
 
 local function buildESP(player)
     if player == LocalPlayer or espObjs[player] then return end
-    -- 8 linhas para os 4 cantos (cada canto = 1 linha H + 1 linha V)
     local corners = {}
     for i = 1, 8 do
         corners[i] = newDraw("Line", {
@@ -107,10 +106,6 @@ local function hideESP(obj)
 end
 
 -- ══ CORNER DRAWER ═════════════════════════
--- Desenha 4 cantos via 8 linhas.
--- Arm = 25% da dimensão respectiva.
--- Bug anterior: linhas ficavam visíveis quando ESPBox=false
--- pois a flag não era checada antes de setar Visible.
 local function updateCorners(obj, x, y, w, h)
     local lines = obj.corners
     if not lines then return end
@@ -122,21 +117,16 @@ local function updateCorners(obj, x, y, w, h)
         return
     end
 
-    local ax = w * 0.25  -- arm horizontal
-    local ay = h * 0.22  -- arm vertical
+    local ax = w * 0.25
+    local ay = h * 0.22
 
-    -- ordem: TL-H, TL-V, TR-H, TR-V, BL-H, BL-V, BR-H, BR-V
     local segs = {
-        -- TL
         { Vector2.new(x,       y),       Vector2.new(x+ax,    y)       },
         { Vector2.new(x,       y),       Vector2.new(x,       y+ay)    },
-        -- TR
         { Vector2.new(x+w,     y),       Vector2.new(x+w-ax,  y)       },
         { Vector2.new(x+w,     y),       Vector2.new(x+w,     y+ay)    },
-        -- BL
         { Vector2.new(x,       y+h),     Vector2.new(x+ax,    y+h)     },
         { Vector2.new(x,       y+h),     Vector2.new(x,       y+h-ay)  },
-        -- BR
         { Vector2.new(x+w,     y+h),     Vector2.new(x+w-ax,  y+h)     },
         { Vector2.new(x+w,     y+h),     Vector2.new(x+w,     y+h-ay)  },
     }
@@ -207,14 +197,12 @@ RunService.RenderStepped:Connect(function()
     pcall(function()
         local vpCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
 
-        -- FOV
         if FOVCircle then
             FOVCircle.Visible  = Config.ShowFOV
             FOVCircle.Position = vpCenter
             FOVCircle.Radius   = Config.FOVSize * 2
         end
 
-        -- Aimbot raw
         if Config.Aimbot then
             local h = getTarget(180, 30)
             if h then
@@ -223,7 +211,6 @@ RunService.RenderStepped:Connect(function()
             end
         end
 
-        -- Aimbot legit
         if Config.AimbotLegit and not isMovingCamera then
             local h = getTarget(150, 25)
             if h then
@@ -232,7 +219,6 @@ RunService.RenderStepped:Connect(function()
             end
         end
 
-        -- ESP
         for player, obj in pairs(espObjs) do
             local char = player.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -261,10 +247,8 @@ RunService.RenderStepped:Connect(function()
                     local w = maxX - minX
                     local h = maxY - minY
 
-                    -- corners (esconde internamente se ESPBox=false)
                     updateCorners(obj, minX, minY, w, h)
 
-                    -- name
                     if Config.ESPName and obj.name then
                         obj.name.Text     = player.DisplayName
                         obj.name.Position = Vector2.new(minX + w/2, minY - 18)
@@ -273,11 +257,9 @@ RunService.RenderStepped:Connect(function()
                         obj.name.Visible = false
                     end
 
-                    -- health
                     if Config.ESPHealth and hum.MaxHealth > 0 then
                         local pct  = math.clamp(hum.Health/hum.MaxHealth, 0, 1)
                         local barH = math.max(h * pct, 1)
-                        -- verde brilhante cheio → verde escuro vazio
                         local g = math.floor(130 + 80*pct)
                         if obj.healthBar then
                             obj.healthBar.Color = Color3.fromRGB(0, g, 40)
@@ -312,7 +294,6 @@ ScreenGui.DisplayOrder= 999
 local _ok = pcall(function() ScreenGui.Parent = CoreGui end)
 if not _ok then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
--- ── PALETA ───────────────────────────────
 local C = {
     bg       = Color3.fromRGB( 10, 10, 10),
     surface  = Color3.fromRGB( 20, 20, 20),
@@ -328,9 +309,8 @@ local C = {
 
 local PW = 300
 local PH = 360
-local TH = 44  -- topbar height
+local TH = 44
 
--- ── MAIN ─────────────────────────────────
 local Main = Instance.new("Frame", ScreenGui)
 Main.Name             = "Main"
 Main.BackgroundColor3 = C.bg
@@ -342,7 +322,6 @@ Main.Draggable        = true
 Main.ClipsDescendants = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0,10)
 
--- border
 local Outer = Instance.new("Frame", Main)
 Outer.BackgroundColor3 = C.border
 Outer.BorderSizePixel  = 0
@@ -351,7 +330,6 @@ Outer.Size     = UDim2.new(1,2,1,2)
 Outer.ZIndex   = 0
 Instance.new("UICorner", Outer).CornerRadius = UDim.new(0,11)
 
--- ── TOPBAR ───────────────────────────────
 local TopBar = Instance.new("Frame", Main)
 TopBar.Name             = "TopBar"
 TopBar.BackgroundColor3 = C.surface
@@ -359,7 +337,6 @@ TopBar.BorderSizePixel  = 0
 TopBar.Position = UDim2.new(0,0,0,0)
 TopBar.Size     = UDim2.new(1,0,0,TH)
 TopBar.ZIndex   = 3
--- fix cantos inferiores do topbar
 local TFix = Instance.new("Frame", TopBar)
 TFix.BackgroundColor3 = C.surface
 TFix.BorderSizePixel  = 0
@@ -386,7 +363,6 @@ TopLine.Position = UDim2.new(0,0,0,TH)
 TopLine.Size     = UDim2.new(1,0,0,1)
 TopLine.ZIndex   = 3
 
--- minimize button
 local MinBtn = Instance.new("TextButton", TopBar)
 MinBtn.BackgroundColor3 = C.elevated
 MinBtn.BorderSizePixel  = 0
@@ -400,7 +376,6 @@ MinBtn.AutoButtonColor = false
 MinBtn.ZIndex   = 5
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0,6)
 
--- ── SCROLL ───────────────────────────────
 local Scroll = Instance.new("ScrollingFrame", Main)
 Scroll.BackgroundTransparency = 1
 Scroll.BorderSizePixel        = 0
@@ -423,7 +398,6 @@ LP.PaddingRight  = UDim.new(0,10)
 LP.PaddingTop    = UDim.new(0,10)
 LP.PaddingBottom = UDim.new(0,10)
 
--- ── MINIMIZE ─────────────────────────────
 local minimized = false
 MinBtn.MouseButton1Click:Connect(function()
     minimized   = not minimized
@@ -565,4 +539,33 @@ local function Slider(labelText, cfgKey, minVal, maxVal)
 
     local valL = Instance.new("TextLabel", row)
     valL.BackgroundTransparency = 1
-    valL.Position 
+    valL.Position  = UDim2.new(0.6,0,0,9)
+    valL.Size      = UDim2.new(0.4,0,0,14)
+    valL.Font      = Enum.Font.GothamBold
+    valL.TextColor3= C.white
+    valL.TextSize  = 11
+    valL.Text      = tostring(Config[cfgKey])
+    valL.ZIndex    = 3
+    valL.TextXAlignment = Enum.TextXAlignment.Right
+
+    local barBg = Instance.new("Frame", row)
+    barBg.BackgroundColor3 = C.elevated
+    barBg.BorderSizePixel  = 0
+    barBg.Position = UDim2.new(0,0,0,34)
+    barBg.Size     = UDim2.new(1,0,0,6)
+    barBg.ZIndex   = 3
+    Instance.new("UICorner", barBg).CornerRadius = UDim.new(1,0)
+
+    local fill = Instance.new("Frame", barBg)
+    fill.BackgroundColor3 = C.white
+    fill.BorderSizePixel  = 0
+    fill.Size     = UDim2.new(0,0,1,0)
+    fill.ZIndex   = 4
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(1,0)
+
+    local dragging = false
+
+    local function setFromX(xPos)
+        local absX = barBg.AbsolutePosition.X
+        local absW = math.max(barBg.AbsoluteSize.X, 1)
+        local pct  =
